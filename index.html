@@ -1,41 +1,384 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PRO7 Test</title>
-    <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            background: #000;
-            width: 100%;
-            min-height: 100%;
-        }
+GERMAN TV WEBSITE — PROJECT HANDOFF
+GOAL
 
-        .player {
-            width: 100%;
-            aspect-ratio: 16 / 9;
-            background: #000;
-        }
+Build a personal TV-style website that displays livestream channels in a TV-like interface.
 
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: 0;
-            display: block;
-        }
-    </style>
-</head>
-<body>
-    <div class="player">
-        <iframe
-            src="https://www.livehdtv.net/embed/pro7/"
-            frameborder="0"
-            scrolling="no"
-            allow="autoplay; fullscreen"
-            allowfullscreen>
-        </iframe>
-    </div>
-</body>
-</html>
+Desired features eventually:
+
+Full-screen TV player
+
+Channel list
+
+Channel numbers
+
+Channel switching
+
+Channel names/logos
+
+TV-style interface
+
+Potentially remote-control style up/down buttons
+
+Potentially an electronic program guide
+
+Add multiple channels later
+
+CURRENT CHANNEL
+
+Channel: PRO7
+Provider/page:
+https://www.livehdtv.net/pro7/
+
+Official embed page:
+https://www.livehdtv.net/embed/pro7/
+
+The provider's page supplies this iframe:
+
+<iframe width="100%" height="auto" src="https://www.livehdtv.net/embed/pro7/" frameborder="0" scrolling="no" allowfullscreen="1"></iframe>
+LOCAL TESTING
+
+Windows computer.
+
+Project folder:
+C:\Users\Marco\Desktop\Test
+
+Main file:
+GermanTV.html
+
+Initially the HTML file was opened directly using file://.
+
+This produced a browser security message involving:
+
+"file: URLs are treated as unique security origins."
+
+Python was installed to run a local HTTP server.
+
+The local server was started with:
+
+cd C:\Users\Marco\Desktop\Test
+
+python -m http.server 8000
+
+The test page was then opened at:
+
+http://localhost:8000/GermanTV.html
+
+The file:// problem was therefore eliminated.
+
+PROBLEM
+
+The PRO7 page works when opened directly:
+
+https://www.livehdtv.net/embed/pro7/
+
+However, when the same page is put inside an iframe on the local website, the player stays on:
+
+"Loading stream"
+
+The same happens when using the inner player iframe discovered from the provider's site.
+
+BROWSER CONSOLE
+
+Chrome DevTools showed:
+
+"Content Security Policy of your site blocks the use of eval in JavaScript"
+
+Chrome explains that CSP prevents arbitrary string evaluation such as:
+
+eval()
+
+new Function()
+
+setTimeout(string)
+
+setInterval(string)
+
+The Console also showed:
+
+"Page layout may be unexpected due to Quirks Mode"
+
+The Quirks Mode warning is not considered the main problem.
+
+The CSP/eval error is the important error.
+
+IMPORTANT DISCOVERY
+
+The page:
+
+https://www.livehdtv.net/pro7/1/
+
+contains this iframe:
+
+<iframe id="tvekran" marginwidth="0" marginheight="0" src="https://www.livehdtv.net/yayin/?kanal=423&yayin=1&guvenlik=$2y$10$T7fTQbtfNmV/ZeHmPX1P7O/ZWDxKhhEkukaza6tVBVlNlv/qL2rHi" frameborder="0" scrolling="no"></iframe>
+
+This indicates the structure is approximately:
+
+/pro7/
+|
++-- /embed/pro7/
+|
++-- /yayin/?kanal=423&yayin=1&guvenlik=...
+|
++-- actual player
+
+IMPORTANT TOKEN INFORMATION
+
+The "guvenlik" parameter appears to be a security/token value.
+
+We tested copying the inner iframe into our own HTML.
+
+It did NOT work and still showed "Loading stream".
+
+Therefore the token may be:
+
+temporary
+
+tied to a session
+
+tied to the provider's page
+
+checked by referrer/origin
+
+otherwise not intended to be reused independently
+
+Do NOT attempt to bypass or defeat the provider's security mechanism.
+
+TEST HTML
+
+The latest simple test page used:
+
+<!DOCTYPE html> <html lang="en"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>PRO7 Test</title>
+<style>
+    html,
+    body {
+        margin: 0;
+        padding: 0;
+        background: #000;
+    }
+
+    .player {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+    }
+
+    iframe {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        display: block;
+    }
+</style>
+
+</head> <body> <div class="player"> <iframe src="https://www.livehdtv.net/embed/pro7/" frameborder="0" scrolling="no" allow="autoplay; fullscreen" allowfullscreen> </iframe> </div> </body> </html>
+RESULT
+
+The above still shows:
+
+"Loading stream"
+
+when served from localhost.
+
+The same provider URL works when opened directly in the browser.
+
+CONCLUSION SO FAR
+
+The HTML syntax is not the main problem.
+
+The local file issue was fixed by using localhost.
+
+The official provider iframe was tested.
+
+The inner player iframe was also discovered and tested.
+
+The player still does not initialize inside the custom website.
+
+This strongly suggests the provider's player has some dependency on its embedding context, security token, session, referrer/origin, or another browser condition.
+
+Do NOT assume that adding:
+
+<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-eval'">
+
+will solve it.
+
+The parent page cannot simply override the CSP of a separately served remote iframe.
+
+Do NOT attempt to bypass the provider's security controls.
+
+NEXT TEST
+
+The next useful test is to host the exact simple HTML page on a real HTTPS static website rather than localhost.
+
+Suggested free host:
+GitHub Pages.
+
+Purpose:
+
+Compare:
+
+file://
+-> failed
+
+localhost:
+-> failed
+
+real HTTPS website:
+-> test needed
+
+If the player works on GitHub Pages, the problem is related to the local development environment.
+
+If the player still shows "Loading stream" on GitHub Pages, then the issue is not caused by file:// or localhost and is more likely related to the provider/player's embedding behavior.
+
+GITHUB PAGES TEST
+
+Create a public repository, for example:
+
+german-tv-test
+
+Create:
+
+index.html
+
+Put the simple iframe test page into index.html.
+
+Enable:
+
+Settings
+-> Pages
+-> Deploy from a branch
+-> main
+-> / (root)
+
+The resulting URL should look like:
+
+https://USERNAME.github.io/german-tv-test/
+
+Use the official embed URL:
+
+https://www.livehdtv.net/embed/pro7/
+
+Do NOT use the copied "guvenlik" token for this test.
+
+The purpose is to test the official iframe exactly as supplied by the provider.
+
+USEFUL DEVTOOLS TEST
+
+If GitHub Pages also fails:
+
+Open the test page.
+
+Press F12.
+
+Use:
+Network
+-> reload page
+-> search/filter for "yayin"
+
+Look for a request resembling:
+
+/yayin/?kanal=423...
+
+Check the HTTP status.
+
+Possible results include:
+200
+302
+401
+403
+
+Also inspect Console for:
+
+CSP
+
+frame
+
+X-Frame-Options
+
+blocked
+
+iframe
+
+eval
+
+refused
+
+security
+
+The exact error and HTTP status should help identify the reason.
+
+EMBED ALTERNATIVES DISCUSSED
+
+We considered:
+
+<object> <embed>
+
+but these are not expected to solve the problem because the provider URL is an HTML player page.
+
+The provider's own supplied iframe is the appropriate embedding method.
+
+Another possibility would be a direct authorized video stream, such as an HLS .m3u8 URL.
+
+If the provider officially supplies a direct stream URL that is authorized for use on another website, then a custom player could potentially be built.
+
+Do NOT extract, bypass, spoof, or circumvent protected stream URLs or security tokens.
+
+CURRENT STATUS
+
+TV interface design has NOT been finalized yet because the first priority is getting one channel to actually play.
+
+Once PRO7 works in the custom website, build:
+
+TV player
+
+Channel selector
+
+Channel numbers
+
+Channel names
+
+Channel switching
+
+Fullscreen
+
+TV-style dark interface
+
+Optional remote control
+
+Optional TV guide
+
+Additional channels
+
+IMPORTANT URLS
+
+Main PRO7 page:
+https://www.livehdtv.net/pro7/
+
+PRO7 page 1:
+https://www.livehdtv.net/pro7/1/
+
+Official PRO7 embed:
+https://www.livehdtv.net/embed/pro7/
+
+Inner player discovered:
+https://www.livehdtv.net/yayin/?kanal=423&yayin=1&guvenlik=...
+
+LOCAL PROJECT
+
+Folder:
+C:\Users\Marco\Desktop\Test
+
+File:
+GermanTV.html
+
+Local server:
+python -m http.server 8000
+
+Local URL:
+http://localhost:8000/GermanTV.html
+
+USER'S ORIGINAL REQUEST
+
+"I have livestream links from friend to embed them in HTML, I want to use them for my own website but I want to make the website work like a TV."
+
+The project is currently being tested with one PRO7 channel.
+
+END OF HANDOFF
